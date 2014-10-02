@@ -9,6 +9,8 @@ module IntuitIdsAggcat
     
     class Services
 
+      cattr_accessor :verbose
+
       class << self
 
         def initialize
@@ -244,6 +246,7 @@ module IntuitIdsAggcat
         ##
         # Helper method to issue post requests
         def oauth_post_request url, body, oauth_token_info, headers = {}, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
+          p "Intuit POST request: url #{url}" if verbose
           oauth_token = oauth_token_info[:oauth_token]
           oauth_token_secret = oauth_token_info[:oauth_token_secret]
 
@@ -253,6 +256,7 @@ module IntuitIdsAggcat
           access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
           begin
             response = access_token.post(url, body, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' }.merge(headers))
+            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
             response_xml = REXML::Document.new response.body
           rescue REXML::ParseException => msg
               #Rails.logger.error "REXML Parse Exception"
@@ -272,6 +276,7 @@ module IntuitIdsAggcat
         ##
         # Helper method to issue get requests
         def oauth_get_request url, oauth_token_info, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
+          p "Intuit GET request: url #{url}" if verbose
           oauth_token = oauth_token_info[:oauth_token]
           oauth_token_secret = oauth_token_info[:oauth_token_secret]
 
@@ -281,6 +286,7 @@ module IntuitIdsAggcat
           access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
           begin
             response = access_token.get(url, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' })
+            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
             response_xml = REXML::Document.new response.body
           rescue REXML::ParseException => msg
               #Rails.logger.error "REXML Parse Exception"
@@ -292,6 +298,7 @@ module IntuitIdsAggcat
         ##
         # Helper method to issue put requests
         def oauth_put_request url, oauth_token_info, body = nil, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
+          p "Intuit PUT request: url #{url}" if verbose
           oauth_token = oauth_token_info[:oauth_token]
           oauth_token_secret = oauth_token_info[:oauth_token_secret]
 
@@ -301,6 +308,7 @@ module IntuitIdsAggcat
           access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
           begin
             response = access_token.put(url, body, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' })
+            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
             response_xml = REXML::Document.new response.body
           rescue REXML::ParseException => msg
               #Rails.logger.error "REXML Parse Exception"
@@ -313,6 +321,7 @@ module IntuitIdsAggcat
         ##
         # Helper method to issue delete requests
         def oauth_delete_request url, oauth_token_info, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
+          p "Intuit DELETE request: url #{url}" if verbose
           oauth_token = oauth_token_info[:oauth_token]
           oauth_token_secret = oauth_token_info[:oauth_token_secret]
 
@@ -321,6 +330,7 @@ module IntuitIdsAggcat
           consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
           access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
           response = access_token.delete(url, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' })
+          p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
           response_xml = REXML::Document.new response.body
           { :response_code => response.code, :response_xml => response_xml }
         end
