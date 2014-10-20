@@ -1,34 +1,50 @@
 # -*- encoding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
-require "intuit_ids_aggcat/version"
+# stub: intuit_ids_aggcat 0.0.8.1 ruby lib
 
 Gem::Specification.new do |s|
-  s.name        = "intuit_ids_aggcat"
-  s.version     = IntuitIdsAggcat::VERSION
-  s.authors     = ["Chris Hart"]
-  s.email       = ["chris@rewardsummit.com"]
-  s.homepage    = ""
-  s.summary     = %q{Integration for Intuit's aggregation and categorization services}
-  s.description = %q{Provides a wrapped for the IPP AggCat interfaces}
+  s.name = "intuit_ids_aggcat"
+  s.version = "0.0.8.1"
 
-  s.rubyforge_project = "intuit_ids_aggcat"
-
-  s.files = [
-    'README.markdown',
-    'LICENSE.txt'
-  ]
-  s.files += Dir['lib/**/*.rb']
-  s.files += Dir['lib/**/*.yml']
-  s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
-  s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
+  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
+  s.authors = ["Chris Hart", "Kai Stinchcombe"]
+  s.date = "2014-10-20"
+  s.description = "Provides a wrapped for the IPP AggCat interfaces"
+  s.email = ["chris@rewardsummit.com"]
+  s.files = ["LICENSE.txt", "README.markdown", "lib/intuit_ids_aggcat.rb", "lib/intuit_ids_aggcat/client/intuit_xml_mappings.rb", "lib/intuit_ids_aggcat/client/saml.rb", "lib/intuit_ids_aggcat/client/services.rb", "lib/intuit_ids_aggcat/core.rb", "lib/intuit_ids_aggcat/core/configuration.rb", "lib/intuit_ids_aggcat/rails.rb", "lib/intuit_ids_aggcat/version.rb", "spec/config/intuit_ids_aggcat.yml", "spec/config/test.crt", "spec/configuration_spec.rb", "spec/rails_spec.rb", "spec/saml_spec.rb", "spec/services_spec.rb", "spec/spec_helper.rb"]
+  s.homepage = ""
+  s.rubyforge_project = "intuit_ids_aggcat"
+  s.rubygems_version = "2.2.1"
+  s.summary = "Integration for Intuit's aggregation and categorization services"
+  s.test_files = ["spec/config/intuit_ids_aggcat.yml", "spec/config/test.crt", "spec/configuration_spec.rb", "spec/rails_spec.rb", "spec/saml_spec.rb", "spec/services_spec.rb", "spec/spec_helper.rb"]
 
-  # specify any dependencies here; for example:
-  s.add_development_dependency "rspec", "~> 2.11"
-  s.add_development_dependency "vcr", "~> 2.2"
-  s.add_development_dependency "fakeweb", "~> 1.3"
-  s.add_runtime_dependency "oauth", "~> 0.4"
-  s.add_runtime_dependency "nokogiri", "~> 1.5"
-  s.add_runtime_dependency "xml-mapping"
-  s.add_runtime_dependency "activesupport"
+  if s.respond_to? :specification_version then
+    s.specification_version = 4
+
+    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_development_dependency(%q<rspec>, ["~> 2.11"])
+      s.add_development_dependency(%q<vcr>, ["~> 2.2"])
+      s.add_development_dependency(%q<fakeweb>, ["~> 1.3"])
+      s.add_runtime_dependency(%q<oauth>, ["~> 0.4"])
+      s.add_runtime_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_runtime_dependency(%q<xml-mapping>, [">= 0"])
+      s.add_runtime_dependency(%q<activesupport>, [">= 0"])
+    else
+      s.add_dependency(%q<rspec>, ["~> 2.11"])
+      s.add_dependency(%q<vcr>, ["~> 2.2"])
+      s.add_dependency(%q<fakeweb>, ["~> 1.3"])
+      s.add_dependency(%q<oauth>, ["~> 0.4"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_dependency(%q<xml-mapping>, [">= 0"])
+      s.add_dependency(%q<activesupport>, [">= 0"])
+    end
+  else
+    s.add_dependency(%q<rspec>, ["~> 2.11"])
+    s.add_dependency(%q<vcr>, ["~> 2.2"])
+    s.add_dependency(%q<fakeweb>, ["~> 1.3"])
+    s.add_dependency(%q<oauth>, ["~> 0.4"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+    s.add_dependency(%q<xml-mapping>, [">= 0"])
+    s.add_dependency(%q<activesupport>, [">= 0"])
+  end
 end

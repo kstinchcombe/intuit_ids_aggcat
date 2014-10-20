@@ -17,6 +17,11 @@ module IntuitIdsAggcat
           
         end
 
+        # adds Services#stub_with(xml, response_code) method
+        def enable_stubbing
+          require 'intuit_ids_aggcat/client/services_stub'
+        end
+
         ##
         # Gets all institutions supported by Intuit. If oauth_token_info isn't provided, new tokens are provisioned using "default" user
         # consumer_key and consumer_secret will be retrieved from the Configuration class if not provided
@@ -97,7 +102,7 @@ module IntuitIdsAggcat
           creds.credential = credentials_array
           il = InstitutionLogin.new
           il.credentials = creds
-          daa = oauth_post_request url, il.save_to_xml.to_s, oauth_token_info
+          daa = oauth_post_request url, oauth_token_info, il.save_to_xml.to_s
           discover_account_data_to_hash daa
         end
 
@@ -113,7 +118,7 @@ module IntuitIdsAggcat
           cr.response = response
           il = IntuitIdsAggcat::InstitutionLogin.new
           il.challenge_responses = cr
-          daa = oauth_post_request url, il.save_to_xml.to_s, oauth_token_info, { "challengeSessionId" => challenge_session_id, "challengeNodeId" => challenge_node_id }
+          daa = oauth_post_request url, oauth_token_info, il.save_to_xml.to_s, { "challengeSessionId" => challenge_session_id, "challengeNodeId" => challenge_node_id }
           discover_account_data_to_hash daa
         end
 
@@ -245,24 +250,10 @@ module IntuitIdsAggcat
 
         ##
         # Helper method to issue post requests
-        def oauth_post_request url, body, oauth_token_info, headers = {}, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
-          p "Intuit POST request: url #{url}" if verbose
-          oauth_token = oauth_token_info[:oauth_token]
-          oauth_token_secret = oauth_token_info[:oauth_token_secret]
+        # KS 10/20/14 - compatibility note: I reordered oauth_token_info, body args to standardize with how the other functions are called
+        def oauth_post_request url, oauth_token_info, body, headers = {}, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
+          response_code, response_xml, response = oauth_request 'post', url, oauth_token_info, body, headers, consumer_key, consumer_secret, timeout
 
-          options = { :request_token_path => 'https://financialdatafeed.platform.intuit.com', :timeout => timeout } 
-          options = options.merge({ :proxy => IntuitIdsAggcat.config.proxy}) if !IntuitIdsAggcat.config.proxy.nil?
-          consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
-          access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
-          begin
-            response = access_token.post(url, body, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' }.merge(headers))
-            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
-            response_xml = REXML::Document.new response.body
-          rescue REXML::ParseException => msg
-              #Rails.logger.error "REXML Parse Exception"
-              return nil
-          end
-          
           # handle challenge responses from discoverAndAcccounts flow
           challenge_session_id = challenge_node_id = nil
           if !response["challengeSessionId"].nil?
@@ -270,69 +261,74 @@ module IntuitIdsAggcat
             challenge_node_id = response["challengeNodeId"]
           end
 
-          { :challenge_session_id => challenge_session_id, :challenge_node_id => challenge_node_id, :response_code => response.code, :response_xml => response_xml }
+          { :challenge_session_id => challenge_session_id, :challenge_node_id => challenge_node_id, :response_code => response_code, :response_xml => response_xml }
         end
 
         ##
         # Helper method to issue get requests
         def oauth_get_request url, oauth_token_info, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
-          p "Intuit GET request: url #{url}" if verbose
-          oauth_token = oauth_token_info[:oauth_token]
-          oauth_token_secret = oauth_token_info[:oauth_token_secret]
-
-          options = { :request_token_path => 'https://financialdatafeed.platform.intuit.com', :timeout => timeout } 
-          options = options.merge({ :proxy => IntuitIdsAggcat.config.proxy}) if !IntuitIdsAggcat.config.proxy.nil?
-          consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
-          access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
-          begin
-            response = access_token.get(url, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' })
-            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
-            response_xml = REXML::Document.new response.body
-          rescue REXML::ParseException => msg
-              #Rails.logger.error "REXML Parse Exception"
-              return nil
-          end
-          { :response_code => response.code, :response_xml => response_xml }
+          response_code, response_xml = oauth_request 'get', url, oauth_token_info, nil, nil, consumer_key, consumer_secret, timeout
+          { :response_code => response_code, :response_xml => response_xml }
         end
 
         ##
         # Helper method to issue put requests
         def oauth_put_request url, oauth_token_info, body = nil, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
-          p "Intuit PUT request: url #{url}" if verbose
-          oauth_token = oauth_token_info[:oauth_token]
-          oauth_token_secret = oauth_token_info[:oauth_token_secret]
-
-          options = { :request_token_path => 'https://financialdatafeed.platform.intuit.com', :timeout => timeout, :http_method => :put } 
-          options = options.merge({ :proxy => IntuitIdsAggcat.config.proxy}) if !IntuitIdsAggcat.config.proxy.nil?
-          consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
-          access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
-          begin
-            response = access_token.put(url, body, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' })
-            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
-            response_xml = REXML::Document.new response.body
-          rescue REXML::ParseException => msg
-              #Rails.logger.error "REXML Parse Exception"
-              #Rails.logger.error msg
-              return nil
-          end
-          { :response_code => response.code, :response_xml => response_xml }
+          response_code, response_xml = oauth_request 'put', url, oauth_token_info, body, nil, consumer_key, consumer_secret, timeout
+          { :response_code => response_code, :response_xml => response_xml }
         end
 
         ##
         # Helper method to issue delete requests
         def oauth_delete_request url, oauth_token_info, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
-          p "Intuit DELETE request: url #{url}" if verbose
+          response_code, response_xml = oauth_request 'delete', url, oauth_token_info, nil, nil, consumer_key, consumer_secret, timeout
+          { :response_code => response_code, :response_xml => response_xml }
+        end
+
+        ##
+        # Helper method for api requests
+        # http_method in get / post / put / delete
+        # will return response_xml=nil if there is an XML parse exception
+        def oauth_request http_method, url, oauth_token_info, body = nil, headers = {}, consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 120
+
+          headers ||= {}
+          http_method = http_method.to_s
+          p "Intuit #{http_method.upcase} request: url #{url}" if verbose
+
+          # gather our http options
+          options = { :request_token_path => 'https://financialdatafeed.platform.intuit.com', :timeout => timeout }
+          options = options.merge(:http_method => :put) if http_method == 'put'  # KS 10/20/14 - no idea why this is here
+          options = options.merge({ :proxy => IntuitIdsAggcat.config.proxy}) if !IntuitIdsAggcat.config.proxy.nil?
+
+          # set up our oauth access token
           oauth_token = oauth_token_info[:oauth_token]
           oauth_token_secret = oauth_token_info[:oauth_token_secret]
-
-          options = { :request_token_path => 'https://financialdatafeed.platform.intuit.com', :timeout => timeout }
-          options = options.merge({ :proxy => IntuitIdsAggcat.config.proxy}) if !IntuitIdsAggcat.config.proxy.nil? 
           consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
-          access_token = OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
-          response = access_token.delete(url, { "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' })
-          p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
-          response_xml = REXML::Document.new response.body
-          { :response_code => response.code, :response_xml => response_xml }
+          access_token = get_access_token(consumer, oauth_token, oauth_token_secret)
+
+          # fetch and parse our API response
+          headers = headers.merge( "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' )
+          if http_method == 'post' || http_method == 'put' # send body on post and put requests
+            response = access_token.send(http_method.to_sym, url, body, headers)
+          else
+            response = access_token.send(http_method.to_sym, url, headers)
+          end
+          # if the response is unparseable, dump it and re-raise the exception
+          begin
+            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
+            response_xml = REXML::Document.new response.body
+          rescue REXML::ParseException => ex
+            p "Intuit API REXML Parse Exception: #{ex}"
+            p(response.body) unless verbose
+            raise ex
+          end
+
+          return response.code, response_xml, response
+        end
+
+        # we break this out so we can stub it to simulate XML responses in testing
+        def get_access_token consumer, oauth_token, oauth_token_secret
+          OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
         end
     
       end
