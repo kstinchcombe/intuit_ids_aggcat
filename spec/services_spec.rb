@@ -139,13 +139,22 @@ describe IntuitIdsAggcat::Client::Services do
   end
 
   it 'should properly stub the API' do
+
     # don't allow stubbing until it's enabled
     lambda { IntuitIdsAggcat::Client::Services.stub_with('xml') }.should raise_error
     IntuitIdsAggcat::Client::Services.enable_stubbing
-    # should return the stubbed response
+
+    # should return the stubbed responses
     IntuitIdsAggcat::Client::Services.stub_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><InstitutionDetail xmlns=\"http://schema.intuit.com/platform/fdatafeed/institution/v1\" xmlns:ns2=\"http://schema.intuit.com/platform/fdatafeed/common/v1\"><institutionId>8860</institutionId><institutionName>Carolina Foothills FCU Credit Card</institutionName><homeUrl>http://www.cffcu.org/index.html</homeUrl><phoneNumber>1-864-585-6838</phoneNumber><address><ns2:address1>520 North Church Street</ns2:address1><ns2:address2>Post Office Box 1411</ns2:address2><ns2:city>Spartanburg</ns2:city><ns2:state>SC</ns2:state><ns2:postalCode>29304</ns2:postalCode><ns2:country>USA</ns2:country></address><emailAddress>http://www.cffcu.org/contactus.html</emailAddress><specialText>Please enter your Carolina Foothills FCU Credit Card Username and Password required for login.</specialText><currencyCode>USD</currencyCode><keys><key><name>Password</name><status>Active</status><displayFlag>true</displayFlag><displayOrder>2</displayOrder><mask>true</mask><description>Password</description></key><key><name>UserName</name><status>Active</status><displayFlag>true</displayFlag><displayOrder>1</displayOrder><mask>false</mask><description>Username</description></key></keys></InstitutionDetail>")
-    x = IntuitIdsAggcat::Client::Services.get_institution_detail(1)  # without stubbing, this returns a blank response - there is no institution id 1
+    # push a second stubbed response onto the stack
+    IntuitIdsAggcat::Client::Services.stub_with("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><InstitutionDetail xmlns=\"http://schema.intuit.com/platform/fdatafeed/institution/v1\" xmlns:ns2=\"http://schema.intuit.com/platform/fdatafeed/common/v1\"><institutionId>8861</institutionId><institutionName>Carolina Foothills FCU Credit Card</institutionName><homeUrl>http://www.cffcu.org/index.html</homeUrl><phoneNumber>1-864-585-6838</phoneNumber><address><ns2:address1>520 North Church Street</ns2:address1><ns2:address2>Post Office Box 1411</ns2:address2><ns2:city>Spartanburg</ns2:city><ns2:state>SC</ns2:state><ns2:postalCode>29304</ns2:postalCode><ns2:country>USA</ns2:country></address><emailAddress>http://www.cffcu.org/contactus.html</emailAddress><specialText>Please enter your Carolina Foothills FCU Credit Card Username and Password required for login.</specialText><currencyCode>USD</currencyCode><keys><key><name>Password</name><status>Active</status><displayFlag>true</displayFlag><displayOrder>2</displayOrder><mask>true</mask><description>Password</description></key><key><name>UserName</name><status>Active</status><displayFlag>true</displayFlag><displayOrder>1</displayOrder><mask>false</mask><description>Username</description></key></keys></InstitutionDetail>")
+    # without stubbing, this returns a blank response - there is no institution id 1
+    x = IntuitIdsAggcat::Client::Services.get_institution_detail(1)
     x.id.should == 8860
+    # pop the second item off the stack
+    x = IntuitIdsAggcat::Client::Services.get_institution_detail(1)
+    x.id.should == 8861
+
     # should break with invalid stubbed xml
     IntuitIdsAggcat::Client::Services.stub_with("<xml/>This isn't valid xml<xml/>", 200)
     lambda { IntuitIdsAggcat::Client::Services.get_institution_detail(8860) }.should raise_error

@@ -42,20 +42,27 @@ module IntuitIdsAggcat
   module Client    
     class Services
 
-      cattr_accessor :stubbed_value
+      cattr_accessor :stubbed_values
 
       class << self
 
-        def stub_with(xml_string, response_code=200)
-          self.stubbed_value = ServicesStub.new(xml_string, response_code)
+        def stubbed_values # default value is a blank array
+          @@stubbed_values ||= []
+        end
+
+        def stub_with(xml_string, response_code=200) # push an item to the end of the stack
+          self.stubbed_values << ServicesStub.new(xml_string, response_code)
+        end
+
+        def clear_stubs
+          self.stubbed_values = []
         end
 
         alias_method :get_access_token_without_stubbing, :get_access_token
         def get_access_token *args
           # delete and return stubbed_value
-          if temp_stubbed_value = stubbed_value
-            self.stubbed_value = nil
-            return temp_stubbed_value
+          if (stubbed_value = stubbed_values.delete_at(0))
+            return stubbed_value
           end
           get_access_token_without_stubbing *args
         end
