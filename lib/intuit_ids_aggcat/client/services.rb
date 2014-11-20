@@ -303,8 +303,7 @@ module IntuitIdsAggcat
           # set up our oauth access token
           oauth_token = oauth_token_info[:oauth_token]
           oauth_token_secret = oauth_token_info[:oauth_token_secret]
-          consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
-          access_token = get_access_token(consumer, oauth_token, oauth_token_secret)
+          access_token = get_access_token(consumer_key, consumer_secret, oauth_token, oauth_token_secret, options)
 
           # fetch and parse our API response
           headers = headers.merge( "Content-Type"=>'application/xml', 'Host' => 'financialdatafeed.platform.intuit.com' )
@@ -327,7 +326,8 @@ module IntuitIdsAggcat
         end
 
         # we break this out so we can stub it to simulate XML responses in testing
-        def get_access_token consumer, oauth_token, oauth_token_secret
+        def get_access_token consumer_key, consumer_secret, oauth_token, oauth_token_secret, options
+          consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
           OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
         end
     
