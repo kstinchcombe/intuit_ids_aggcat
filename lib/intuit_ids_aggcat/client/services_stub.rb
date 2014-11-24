@@ -66,6 +66,15 @@ module IntuitIdsAggcat
           end
           get_access_token_without_stubbing *args
         end
+
+        alias_method :saml_get_tokens_without_stubbing, :saml_get_tokens
+        def saml_get_tokens username
+          if stubbed_values[0]
+            self.last_username = username
+            return {}
+          end
+          get_access_token_without_stubbing(username)
+        end
         
       end
     end

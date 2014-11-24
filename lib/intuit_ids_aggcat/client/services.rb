@@ -10,6 +10,8 @@ module IntuitIdsAggcat
     class Services
 
       cattr_accessor :verbose
+      cattr_accessor :last_username
+      last_username = nil
 
       class << self
 
@@ -25,7 +27,7 @@ module IntuitIdsAggcat
         ##
         # Gets all institutions supported by Intuit. If oauth_token_info isn't provided, new tokens are provisioned using "default" user
         # consumer_key and consumer_secret will be retrieved from the Configuration class if not provided
-        def get_institutions oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens("default"), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def get_institutions oauth_token_info = saml_get_tokens("default"), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           response = oauth_get_request "https://financialdatafeed.platform.intuit.com/rest-war/v1/institutions", oauth_token_info, consumer_key, consumer_secret
           if response[:response_code] == "200"
             institutions = Institutions.load_from_xml(response[:response_xml].root)
@@ -38,7 +40,7 @@ module IntuitIdsAggcat
         ##
         # Gets the institution details for id. If oauth_token_info isn't provided, new tokens are provisioned using "default" user
         # consumer_key and consumer_secret will be retrieved from the Configuration class if not provided
-        def get_institution_detail id, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens("default"), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def get_institution_detail id, oauth_token_info = saml_get_tokens("default"), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           response = oauth_get_request "https://financialdatafeed.platform.intuit.com/rest-war/v1/institutions/#{id}", oauth_token_info, consumer_key, consumer_secret
           institutions = InstitutionDetail.load_from_xml(response[:response_xml].root)
           institutions
@@ -47,7 +49,7 @@ module IntuitIdsAggcat
         ##
         # Get a specific account for a customer from aggregation at Intuit.
         # username and account ID must be provided, if no oauth_token_info is provided, new tokens will be provisioned using username
-        def get_account username, account_id, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def get_account username, account_id, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/rest-war/v1/accounts/#{account_id}"
           response = oauth_get_request url, oauth_token_info
           account = AccountList.load_from_xml(response[:response_xml].root)
@@ -57,7 +59,7 @@ module IntuitIdsAggcat
         ##
         # Deletes the customer's accounts from aggregation at Intuit.
         # username must be provided, if no oauth_token_info is provided, new tokens will be provisioned using username
-        def delete_customer username, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def delete_customer username, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/rest-war/v1/customers/"
           oauth_delete_request url, oauth_token_info
         end
@@ -65,8 +67,7 @@ module IntuitIdsAggcat
         ##
         # Deletes the a specific account for a customer from aggregation at Intuit.
         # username and account ID must be provided, if no oauth_token_info is provided, new tokens will be provisioned using username
-        def delete_account username, account_id, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
-          puts "in gem, username = #{username}, account = #{account_id}."
+        def delete_account username, account_id, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/rest-war/v1/accounts/#{account_id}"
           oauth_delete_request url, oauth_token_info
         end
@@ -88,7 +89,7 @@ module IntuitIdsAggcat
         #    challenge_node_id   : challenge node ID to pass to challenge_response if this is a challenge 
         #    description         : text description of the result of the discover request
 
-        def discover_and_add_accounts_with_credentials institution_id, username, creds_hash, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 30
+        def discover_and_add_accounts_with_credentials institution_id, username, creds_hash, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret, timeout = 30
 
           url = "https://financialdatafeed.platform.intuit.com/rest-war/v1/institutions/#{institution_id}/logins"
           credentials_array = []
@@ -108,7 +109,7 @@ module IntuitIdsAggcat
 
         ##
         # Given a username, response text, challenge session ID and challenge node ID, passes the credentials to Intuit to begin aggregation
-        def challenge_response institution_id, username, response, challenge_session_id, challenge_node_id, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def challenge_response institution_id, username, response, challenge_session_id, challenge_node_id, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/rest-war/v1/institutions/#{institution_id}/logins"
           if !(response.kind_of?(Array) || response.respond_to?('each'))
             response = [response]
@@ -124,7 +125,7 @@ module IntuitIdsAggcat
 
         ##
         # Gets all accounts for a customer
-        def get_customer_accounts username, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def get_customer_accounts username, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/v1/accounts/"
           response = oauth_get_request url, oauth_token_info
           accounts = AccountList.load_from_xml(response[:response_xml].root)
@@ -132,7 +133,7 @@ module IntuitIdsAggcat
 
         ##
         # Gets accounts for a specific customer login_id
-        def get_login_accounts login_id, username, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def get_login_accounts login_id, username, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/v1/logins/#{login_id}/accounts"
           response = oauth_get_request url, oauth_token_info
           accounts = AccountList.load_from_xml(response[:response_xml].root)
@@ -142,7 +143,7 @@ module IntuitIdsAggcat
         # Updates an existing customer account with new credentials at an institution
         # Response can include an MFA challenge; see the return values for discover_and_add_accounts_with_credentials for
         # more information on possible responses
-        def update_institution_login_with_credentials login_id, username, creds_hash, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def update_institution_login_with_credentials login_id, username, creds_hash, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/v1/logins/#{login_id}?refresh=true"
           credentials_array = []
           creds_hash.each do |k,v|
@@ -161,7 +162,7 @@ module IntuitIdsAggcat
 
         ##
         # Explicitly refreshes the customer account with new credentials at an institution
-        def update_institution_login_explicit_refresh login_id, username, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def update_institution_login_explicit_refresh login_id, username, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           url = "https://financialdatafeed.platform.intuit.com/v1/logins/#{login_id}?refresh=true"
           body = InstitutionLogin.new.save_to_xml.to_s
           response = oauth_put_request url, oauth_token_info, body
@@ -170,7 +171,7 @@ module IntuitIdsAggcat
 
         ##
         # Get transactions for a specific account and timeframe
-        def get_account_transactions username, account_id, start_date, end_date = nil, oauth_token_info = IntuitIdsAggcat::Client::Saml.get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
+        def get_account_transactions username, account_id, start_date, end_date = nil, oauth_token_info = saml_get_tokens(username), consumer_key = IntuitIdsAggcat.config.oauth_consumer_key, consumer_secret = IntuitIdsAggcat.config.oauth_consumer_secret
           txn_start = start_date.strftime("%Y-%m-%d")
           url = "https://financialdatafeed.platform.intuit.com/rest-war/v1/accounts/#{account_id}/transactions?txnStartDate=#{txn_start}"
           if !end_date.nil?
@@ -293,7 +294,7 @@ module IntuitIdsAggcat
 
           headers ||= {}
           http_method = http_method.to_s
-          p "Intuit #{http_method.upcase} request: url #{url}" if verbose
+          p "Intuit #{http_method.upcase} request for #{last_username}: #{url}" if verbose
 
           # gather our http options
           options = { :request_token_path => 'https://financialdatafeed.platform.intuit.com', :timeout => timeout }
@@ -314,7 +315,7 @@ module IntuitIdsAggcat
           end
           # if the response is unparseable, dump it and re-raise the exception
           begin
-            p "Intuit response: code #{response.code}, document\n\n#{response.body}\n\n" if verbose
+            p "Intuit response -- timestamp: #{DateTime.now.utc.to_s}, response code: #{response.code}, last_username: #{last_username}, method: #{http_method.upcase}, url: #{url}, document: #{response.body}" if (verbose || response.code != "200")
             response_xml = REXML::Document.new response.body
           rescue REXML::ParseException => ex
             p "Intuit API REXML Parse Exception: #{ex}"
@@ -329,6 +330,11 @@ module IntuitIdsAggcat
         def get_access_token consumer_key, consumer_secret, oauth_token, oauth_token_secret, options
           consumer = OAuth::Consumer.new(consumer_key, consumer_secret, options)
           OAuth::AccessToken.new(consumer, oauth_token, oauth_token_secret)
+        end
+
+        def saml_get_tokens(username)
+          self.last_username = username
+          IntuitIdsAggcat::Client::Saml.get_tokens(username)
         end
     
       end
