@@ -314,12 +314,13 @@ module IntuitIdsAggcat
             response = access_token.send(http_method.to_sym, url, headers)
           end
           # if the response is unparseable, dump it and re-raise the exception
+          response_xml_masked = response.body && response.body.gsub(/>[0-9]{16}</){|s| '>' + s[1..-6].gsub(/./,'X') + s[-5..-2] + '<' }
           begin
-            puts("Intuit response -- timestamp: #{DateTime.now.utc.to_s}, response code: #{response.code}, last_username: #{last_username}, method: #{http_method.upcase}, url: #{url}, document: #{response.body}") if (verbose || response.code.to_s != "200")
+            puts("Intuit response -- timestamp: #{DateTime.now.utc.to_s}, response code: #{response.code}, last_username: #{last_username}, method: #{http_method.upcase}, url: #{url}, document: #{response_xml_masked}") if (verbose || response.code.to_s != "200")
             response_xml = REXML::Document.new response.body
           rescue REXML::ParseException => ex
             puts "Intuit API REXML Parse Exception: #{ex}"
-            puts(response.body) unless verbose # if it's verbose, we already spit this out. otherwise, we want it in the logs because it generated an error
+            puts(response_xml_masked) unless verbose # if it's verbose, we already spit this out. otherwise, we want it in the logs because it generated an error
             raise ex
           end
 

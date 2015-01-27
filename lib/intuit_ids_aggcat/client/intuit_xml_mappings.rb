@@ -183,6 +183,7 @@ module IntuitIdsAggcat
   end
 
   class Account
+    cattr_accessor :mask_account_numbers
     include XML::Mapping  
     numeric_node :account_id, "accountId", :default_value => nil
     text_node :status, "status", :default_value => nil
@@ -202,6 +203,18 @@ module IntuitIdsAggcat
     text_node :currency_code, "currencyCode", :default_value => nil
     text_node :bank_id, "bankId", :default_value => nil
     numeric_node :institution_login_id, "institutionLoginId", :default_value => nil  
+    def account_number_real= val
+      if val && @@mask_account_numbers && val.match(/\A[0-9]{16}\z/)
+        val = "#{val}"[0..-5].gsub(/./,'X') + "#{val}"[-4..-1]
+      end
+      @account_number_real = val
+    end
+    def account_number= val
+      if val && @@mask_account_numbers && val.match(/\A[0-9]{16}\z/)
+        val = "#{val}"[0..-5].gsub(/./,'X') + "#{val}"[-4..-1]
+      end
+      @account_number = val
+    end
   end
 
   class BankingAccount < Account
